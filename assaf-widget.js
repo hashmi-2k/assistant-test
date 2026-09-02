@@ -268,7 +268,22 @@
       chips: ["A summer perfume for women", "Gift for my wife under 300 SAR", "Latest summer perfumes"]
     }
   };
-  var lang = "ar";
+  // Detect the store's language from the page so the widget matches it on load.
+  // Salla sets <html lang="ar"> or "en" (and dir). Falls back to Arabic.
+  function detectPageLang() {
+    try {
+      var htmlLang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+      if (htmlLang.indexOf("en") === 0) return "en";
+      if (htmlLang.indexOf("ar") === 0) return "ar";
+      var dir = (document.documentElement.getAttribute("dir") || "").toLowerCase();
+      if (dir === "ltr") return "en";
+      if (dir === "rtl") return "ar";
+      // last resort: URL path like /en or /en/
+      if (/\/en(\/|$|\?)/i.test(location.pathname)) return "en";
+    } catch (e) {}
+    return "ar";
+  }
+  var lang = detectPageLang();
 
   var $ = function (id) { return document.getElementById(id); };
   var root = $("assaf-assistant"), panel = $("aa-panel"), messages = $("aa-messages"), input = $("aa-input");
