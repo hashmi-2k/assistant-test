@@ -242,9 +242,9 @@
   // {ar} shows on the Arabic site, {en} on the English site.
   var NUDGE = {
     enabled: true,
-    delayMs: 3000,        // how long after page load before it appears
-    ar: "🇸🇦 عروض اليوم الوطني وصلت! اسألني عن أفضل العطور",
-    en: "🇸🇦 National Day offers are here! Ask me for the best picks"
+    delayMs: 2000,        // how long after page load before it appears
+    ar: "✨ عروض اليوم الوطني وصلت! اسألني عن أفضل العطور",
+    en: "✨ National Day offers are here! Ask me for the best picks"
   };
 
   // ─────────── Language strings ───────────
