@@ -80,6 +80,31 @@
   .aa-launcher svg { width: 27px; height: 27px; }
   .aa-launcher .aa-logo { width: 34px; height: 34px; object-fit: contain; }
   .aa-launcher .aa-ring { position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--accent); opacity: .55; animation: aa-pulse 3s ease-in-out infinite; }
+
+  /* Nudge bubble (promo message above the launcher) */
+  .aa-nudge {
+    position: absolute; bottom: 76px; right: 0;
+    max-width: 260px; width: max-content;
+    background: #fff; color: var(--ink);
+    border: 1px solid var(--line); border-inline-start: 3px solid var(--accent);
+    border-radius: 14px; padding: 12px 34px 12px 15px;
+    font-size: 13.5px; line-height: 1.5; font-family: var(--font-ar);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+    cursor: pointer; opacity: 0; transform: translateY(8px) scale(.96);
+    transition: opacity .3s ease, transform .3s cubic-bezier(.34,1.4,.5,1);
+    pointer-events: none;
+  }
+  #assaf-assistant:not([dir="rtl"]) .aa-nudge { font-family: var(--font-body); padding: 12px 15px 12px 34px; }
+  #assaf-assistant[dir="rtl"] .aa-nudge { right: 0; left: auto; }
+  .aa-nudge.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .aa-nudge:hover { border-color: var(--accent); }
+  .aa-nudge-x {
+    position: absolute; top: 6px; background: none; border: none;
+    font-size: 17px; line-height: 1; color: var(--ink-soft); cursor: pointer; padding: 2px 5px;
+  }
+  #assaf-assistant:not([dir="rtl"]) .aa-nudge-x { right: 6px; }
+  #assaf-assistant[dir="rtl"] .aa-nudge-x { left: 6px; }
+  .aa-nudge-x:hover { color: var(--ink); }
   @keyframes aa-pulse { 0%,100%{ transform: scale(1); opacity:.55 } 50%{ transform: scale(1.06); opacity:.2 } }
 
   /* Panel */
@@ -185,7 +210,7 @@
       </div>
       <div class="aa-messages" id="aa-messages">
         <div class="aa-welcome" id="aa-welcome">
-          <div class="aa-mark"><img src="https://cdn.salla.sa/yrlRO/7VOVfF6OLfWINIX23Aatnbxrozl5ecpy1nhLo7uh.png" alt="ASSAF"></div>
+          <div class="aa-mark"><img src="https://hashmi-2k.github.io/assistant-test/ASSAF%20Logo_FAW.png" alt="ASSAF"></div>
           <span id="aa-welcome-text">كيف أقدر أساعدك اليوم؟<br>اسأل عن العطور، الساعات، الهدايا وغيرها.</span>
           <div class="aa-chips" id="aa-chips"></div>
         </div>
@@ -196,9 +221,13 @@
       </div>
     </div>
 
+    <div class="aa-nudge" id="aa-nudge" role="button" tabindex="0">
+      <span class="aa-nudge-text" id="aa-nudge-text"></span>
+      <button class="aa-nudge-x" id="aa-nudge-x" aria-label="إغلاق">×</button>
+    </div>
     <button class="aa-launcher" id="aa-launcher" aria-label="افتح مساعد التسوق">
       <span class="aa-ring"></span>
-      <img class="aa-logo" src="https://cdn.salla.sa/yrlRO/7VOVfF6OLfWINIX23Aatnbxrozl5ecpy1nhLo7uh.png" alt="ASSAF">
+      <img class="aa-logo" src="https://hashmi-2k.github.io/assistant-test/ASSAF%20Logo_FAW.png" alt="ASSAF">
     </button>
   </div>`;
 
@@ -207,6 +236,16 @@
   // ─────────── CONFIG ───────────
   var WORKER_URL = "https://assaf-bot.s-hashmi.workers.dev"; // your Worker
   var USE_STREAMING = true;
+
+  // ─────────── NUDGE MESSAGE (the little bubble that pops up above the icon) ───
+  // EDIT THIS to change the promo message. Set enabled:false to hide it entirely.
+  // {ar} shows on the Arabic site, {en} on the English site.
+  var NUDGE = {
+    enabled: true,
+    delayMs: 3000,        // how long after page load before it appears
+    ar: "🇸🇦 عروض اليوم الوطني وصلت! اسألني عن أفضل العطور",
+    en: "🇸🇦 National Day offers are here! Ask me for the best picks"
+  };
 
   // ─────────── Language strings ───────────
   var I18N = {
@@ -259,6 +298,7 @@
   function toggleLang() {
     lang = (lang === "ar") ? "en" : "ar";
     applyLang();
+    updateNudgeText();
   }
 
   // Strip markdown so ** ** and * don't show as literal characters
@@ -293,8 +333,33 @@
     return html;
   }
 
-  function open() { panel.classList.add("open"); setTimeout(function(){ input.focus(); }, 200); }
+  function open() { panel.classList.add("open"); dismissNudge(); setTimeout(function(){ input.focus(); }, 200); }
   function close() { panel.classList.remove("open"); }
+
+  // ─────────── Nudge bubble ───────────
+  var nudgeDismissed = false;
+  function updateNudgeText() {
+    var el = $("aa-nudge-text");
+    if (el) el.textContent = NUDGE[lang] || "";
+  }
+  function showNudge() {
+    if (!NUDGE.enabled || nudgeDismissed) return;
+    if (panel.classList.contains("open")) return;  // don't show if already chatting
+    updateNudgeText();
+    var n = $("aa-nudge"); if (n) n.classList.add("show");
+  }
+  function dismissNudge() {
+    nudgeDismissed = true;
+    var n = $("aa-nudge"); if (n) n.classList.remove("show");
+  }
+  (function initNudge() {
+    var n = $("aa-nudge"), x = $("aa-nudge-x");
+    if (!n) return;
+    // clicking the bubble opens the chat; the × just dismisses
+    n.onclick = function () { open(); };
+    if (x) x.onclick = function (e) { e.stopPropagation(); dismissNudge(); };
+    if (NUDGE.enabled) setTimeout(showNudge, NUDGE.delayMs || 3000);
+  })();
   $("aa-launcher").onclick = function () { panel.classList.contains("open") ? close() : open(); };
   $("aa-close").onclick = close;
   $("aa-lang").onclick = toggleLang;
