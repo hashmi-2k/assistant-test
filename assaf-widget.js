@@ -242,9 +242,9 @@
   // {ar} shows on the Arabic site, {en} on the English site.
   var NUDGE = {
     enabled: true,
-    delayMs: 2000,        // how long after page load before it appears
-    ar: "✨ عروض اليوم الوطني وصلت! اسألني عن أفضل العطور",
-    en: "✨ National Day offers are here! Ask me for the best picks"
+    delayMs: 3000,        // how long after page load before it appears
+    ar: "🇸🇦 عروض اليوم الوطني وصلت! اسألني عن أفضل العطور",
+    en: "🇸🇦 National Day offers are here! Ask me for the best picks"
   };
 
   // ─────────── Language strings ───────────
@@ -574,6 +574,9 @@
         bubble.innerHTML = renderRich(reply || acc);
         var replyLang = /[\u0600-\u06FF]/.test(reply) ? "ar" : "en";
         var ids = extractIds(acc);
+        // Did the AI explicitly recommend nothing (empty array), e.g. it asked a
+        // clarifying question? If so, don't force cards from name-detection.
+        var emptyRec = /"recommended_ids"\s*:\s*\[\s*\]/.test(acc);
         getProducts().then(function (all) {
           linkifyNames(bubble, all);
           var byId = {}; all.forEach(function (p) { byId[String(p.id)] = p; });
@@ -585,9 +588,12 @@
             if (p && !seen[p.id]) { seen[p.id] = 1; chosen.push(p); }
           });
           // 2) plus any product whose name appears in the reply text (merge, don't replace)
-          productsFromText(reply, all).forEach(function (p) {
-            if (!seen[p.id]) { seen[p.id] = 1; chosen.push(p); }
-          });
+          //    — but only if the AI didn't deliberately recommend nothing.
+          if (!emptyRec) {
+            productsFromText(reply, all).forEach(function (p) {
+              if (!seen[p.id]) { seen[p.id] = 1; chosen.push(p); }
+            });
+          }
           addCards(chosen.map(function (p) {
             return { name: p.name, name_en: p.name_en, cat: p.cat,
                      price: p.was ? p.was : p.price, sale: p.was ? p.price : null,
