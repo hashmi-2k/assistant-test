@@ -180,6 +180,15 @@
   .aa-card .aa-price.on-sale { color: var(--sale); }
   .aa-card .aa-was { font-size: 12px; color: var(--ink-soft); text-decoration: line-through; font-weight: 400; }
   .aa-card .aa-cur { font-size: 12px; font-weight: 500; }
+  /* Out-of-stock: dim the card slightly and show a badge next to the name */
+  .aa-card.aa-oos { opacity: .72; }
+  .aa-card.aa-oos .aa-thumb { filter: grayscale(35%); }
+  .aa-oos-badge {
+    display: inline-block; margin-inline-start: 7px; vertical-align: middle;
+    font-size: 10px; font-weight: 700; letter-spacing: .3px;
+    color: var(--sale); background: #f7e9e6; border: 1px solid #eccec8;
+    border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  }
 
   /* Typing dots */
   .aa-typing { align-self: flex-start; background: #f6f6f4; border-radius: 13px; padding: 12px 15px; display: flex; gap: 4px; }
@@ -402,16 +411,20 @@
     var wrap = document.createElement("div"); wrap.className = "aa-cards";
     products.forEach(function (p) {
       var a = document.createElement("a");
-      a.className = "aa-card"; a.href = p.link || "#"; a.target = "_blank"; a.rel = "noreferrer"; a.dir = "auto";
+      a.className = "aa-card" + (p.in_stock === false ? " aa-oos" : "");
+      a.href = p.link || "#"; a.target = "_blank"; a.rel = "noreferrer"; a.dir = "auto";
       // English reply → use the English name when the product has a trustworthy one,
       // otherwise fall back to the Arabic name.
       var displayName = (useEn && p.name_en) ? p.name_en : (p.name || p.name_en);
       var price = p.sale ? p.sale : p.price;
       var wasHtml = p.sale ? '<span class="aa-was">' + p.price + '</span>' : '';
+      var oosBadge = (p.in_stock === false)
+        ? '<span class="aa-oos-badge">' + (useEn ? "Out of stock" : "غير متوفر حالياً") + '</span>'
+        : '';
       a.innerHTML =
         '<img class="aa-thumb" src="' + (p.img || "") + '" onerror="this.style.visibility=\'hidden\'">' +
         '<div class="aa-info">' +
-          '<div class="aa-name">' + esc(displayName) + '</div>' +
+          '<div class="aa-name">' + esc(displayName) + oosBadge + '</div>' +
           '<div class="aa-meta">' + esc(p.cat || "") + '</div>' +
           '<div class="aa-priceline">' +
             '<span class="aa-price' + (p.sale ? ' on-sale' : '') + '">' + price + ' <span class="aa-cur">﷼</span></span>' +
@@ -522,7 +535,7 @@
           : productsFromText(reply, all).map(function (p) {
               return { name: p.name, name_en: p.name_en, cat: p.cat,
                        price: p.was ? p.was : p.price, sale: p.was ? p.price : null,
-                       link: p.link, img: p.img };
+                       link: p.link, img: p.img, in_stock: p.in_stock };
             });
         addCards(prods, data.lang);
       });
@@ -597,7 +610,7 @@
           addCards(chosen.map(function (p) {
             return { name: p.name, name_en: p.name_en, cat: p.cat,
                      price: p.was ? p.was : p.price, sale: p.was ? p.price : null,
-                     link: p.link, img: p.img };
+                     link: p.link, img: p.img, in_stock: p.in_stock };
           }), replyLang);
         });
         history.push({ role: "user", content: text });
@@ -631,7 +644,7 @@
     fetch(WORKER_URL + "/products").then(function (r) { return r.json(); }).then(function (all) {
       var map = {}; all.forEach(function (p) { map[String(p.id)] = p; });
       var products = ids.map(function (id) { return map[String(id)]; }).filter(Boolean).map(function (p) {
-        return { name: p.name, name_en: p.name_en, cat: p.cat, price: p.was ? p.was : p.price, sale: p.was ? p.price : null, link: p.link, img: p.img };
+        return { name: p.name, name_en: p.name_en, cat: p.cat, price: p.was ? p.was : p.price, sale: p.was ? p.price : null, link: p.link, img: p.img, in_stock: p.in_stock };
       });
       addCards(products, replyLang);
     }).catch(function(){});
