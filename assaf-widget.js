@@ -292,18 +292,6 @@
     } catch (e) {}
     return "ar";
   }
-  // ─────────── UTM tracking ───────────
-  // Tags every product link so GA4 attributes the visit (and any purchase) to the
-  // assistant. Appends with & if the link already has query params, ? otherwise.
-  var UTM = "utm_source=ai_assistant&utm_medium=chat";
-  function withUTM(link) {
-    if (!link || link === "#") return link || "#";
-    if (link.indexOf("utm_source=") !== -1) return link; // already tagged
-    link = link.replace(/&amp;/g, "&");                  // fix any encoded ampersands
-    var sep = link.indexOf("?") !== -1 ? "&" : "?";
-    return link + sep + UTM;
-  }
-
   var lang = detectPageLang();
 
   var $ = function (id) { return document.getElementById(id); };
@@ -424,7 +412,7 @@
     products.forEach(function (p) {
       var a = document.createElement("a");
       a.className = "aa-card" + (p.in_stock === false ? " aa-oos" : "");
-      a.href = withUTM(p.link || "#"); a.target = "_blank"; a.rel = "noreferrer"; a.dir = "auto";
+      a.href = p.link || "#"; a.target = "_blank"; a.rel = "noreferrer"; a.dir = "auto";
       // English reply → use the English name when the product has a trustworthy one,
       // otherwise fall back to the Arabic name.
       var displayName = (useEn && p.name_en) ? p.name_en : (p.name || p.name_en);
@@ -514,7 +502,7 @@
       }
       if (match && match.link) {
         var a = document.createElement("a");
-        a.href = withUTM(match.link); a.target = "_blank"; a.rel = "noreferrer";
+        a.href = match.link; a.target = "_blank"; a.rel = "noreferrer";
         a.className = "aa-inline-link";
         a.textContent = b.textContent;
         b.parentNode.replaceChild(a, b);
